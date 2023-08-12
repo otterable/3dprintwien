@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+button 1
+<script async
+  src="https://js.stripe.com/v3/buy-button.js">
+</script>
+
+<stripe-buy-button
+  buy-button-id="buy_btn_1NZ23oEgtx1au46GCkrzXkH5"
+  publishable-key="pk_live_51Lxm6sEgtx1au46GHhDtjk3JZ04OaA8p7T6xM4lQFLxfbPotRsuT4AhoM4WA0myCsirZeQN32vnUvUSmn1zVyD3m00docojbx7"
+>
+</stripe-buy-button>
+
+button 2
+<script async
+  src="https://js.stripe.com/v3/buy-button.js">
+</script>
+
+<stripe-buy-button
+  buy-button-id="buy_btn_1NZ231Egtx1au46GHoGk5Rs2"
+  publishable-key="pk_live_51Lxm6sEgtx1au46GHhDtjk3JZ04OaA8p7T6xM4lQFLxfbPotRsuT4AhoM4WA0myCsirZeQN32vnUvUSmn1zVyD3m00docojbx7"
+>
+</stripe-buy-button>
+
+button 3
+<script async
+  src="https://js.stripe.com/v3/buy-button.js">
+</script>
+
+<stripe-buy-button
+  buy-button-id="buy_btn_1NZ21tEgtx1au46GyD4koaPw"
+  publishable-key="pk_live_51Lxm6sEgtx1au46GHhDtjk3JZ04OaA8p7T6xM4lQFLxfbPotRsuT4AhoM4WA0myCsirZeQN32vnUvUSmn1zVyD3m00docojbx7"
+>
+</stripe-buy-button>
+
+button 4
+<script async
+  src="https://js.stripe.com/v3/buy-button.js">
+</script>
+
+<stripe-buy-button
+  buy-button-id="buy_btn_1NZ1lrEgtx1au46GDf0IOR3G"
+  publishable-key="pk_live_51Lxm6sEgtx1au46GHhDtjk3JZ04OaA8p7T6xM4lQFLxfbPotRsuT4AhoM4WA0myCsirZeQN32vnUvUSmn1zVyD3m00docojbx7"
+>
+</stripe-buy-button>
+<html>
+<head>
+    <title>3D Print Wien - Günstiger und schneller Druck mit Kostenrechner</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+        <h1>3D Print Wien</h1>
+        <form method="POST" action="/upload" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".stl,.dwg">
+            <input type="submit" value="Upload">
+        </form>
+        <p id="file_received_message" style="display: none;">We have received your file!</p>
+        <hr>
+        <div class="options">
+            <h2>Options:</h2>
+            <label>
+                <input type="radio" name="printing_option" value="single_structure" onclick="togglePrintingOption(this)" checked>
+                I want to print a single structure.
+            </label>
+            <br>
+            <label>
+                <input type="radio" name="printing_option" value="small_pieces" onclick="togglePrintingOption(this)">
+                I want to print many small pieces.
+            </label>
+        </div>
+        <div class="calculator" id="calculator_div_single">
+            <h2>How big do you expect your print to be?</h2>
+            <form id="price-form">
+                <label for="length">Length (mm):</label>
+                <input type="number" name="length" id="length" min="1" max="220" required oninput="checkMaxValues()"><br>
+
+                <label for="width">Width (mm):</label>
+                <input type="number" name="width" id="width" min="1" max="220" required oninput="checkMaxValues()"><br>
+
+                <label for="height">Height (mm):</label>
+                <input type="number" name="height" id="height" min="1" max="250" required oninput="checkMaxValues()"><br>
+
+                <div id="single_result"></div>
+            </form>
+        </div>
+        <div class="calculator" id="calculator_div_small" style="display: none;">
+            <h2>How big are the small pieces you want to print?</h2>
+            <form id="small_pieces_price_form">
+                <label for="small_length">Length (mm):</label>
+                <input type="number" name="small_length" id="small_length" min="1" max="220" required oninput="checkSmallMaxValues()"><br>
+
+                <label for="small_width">Width (mm):</label>
+                <input type="number" name="small_width" id="small_width" min="1" max="220" required oninput="checkSmallMaxValues()"><br>
+
+                <label for="small_height">Height (mm):</label>
+                <input type="number" name="small_height" id="small_height" min="1" max="250" required oninput="checkSmallMaxValues()"><br>
+
+                <div id="small_result"></div>
+            </form>
+        </div>
+    </div>
+
+    <form id="payment-form" method="POST" action="/order" style="display: none;">
+		<input type="hidden" name="price" id="order_price" value="">
+		<button type="submit" id="order_button" style="display: none;">Checkout</button>
+	</form>
+
+
+    <!-- Add the Stripe.js library -->
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <script>
+        function togglePrintingOption(checkbox) {
+            const radioButtons = document.getElementsByName('printing_option');
+            radioButtons.forEach((radio) => {
+                if (radio !== checkbox) {
+                    radio.checked = false;
+                }
+            });
+
+            const calculatorDivSingle = document.getElementById('calculator_div_single');
+            const calculatorDivSmall = document.getElementById('calculator_div_small');
+
+            if (checkbox.value === 'single_structure') {
+                calculatorDivSingle.style.display = 'block';
+                calculatorDivSmall.style.display = 'none';
+            } else {
+                calculatorDivSingle.style.display = 'none';
+                calculatorDivSmall.style.display = 'block';
+            }
+        }
+
+        const priceForm = document.getElementById('price-form');
+        const smallPiecesPriceForm = document.getElementById('small_pieces_price_form');
+
+        // Update the form submission event listeners
+        priceForm.addEventListener('submit', handleFormSubmit);
+        smallPiecesPriceForm.addEventListener('submit', handleFormSubmit);
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Call the respective calculate functions when the form is submitted
+            if (event.target === priceForm) {
+                calculateSinglePrice();
+            } else if (event.target === smallPiecesPriceForm) {
+                calculateSmallPiecesPrice();
+            }
+        }
+
+        function calculateSinglePrice() {
+            const length = parseInt(document.getElementById('length').value);
+			const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            const total = length + width + height;
+
+            let price = 0;
+
+            if (total <= 250) {
+                price = 9;
+            } else if (total <= 350) {
+                price = 12;
+            } else if (total <= 450) {
+                price = 15;
+            } else if (total <= 690) {
+                price = 18;
+            }
+
+            const singleResult = document.getElementById('single_result');
+            singleResult.innerHTML = `Total price: €${price.toFixed(2)}`;
+
+            // Update the value of the hidden input field with the calculated price
+            const orderPriceInput = document.getElementById('order_price');
+            orderPriceInput.value = price.toFixed(2);
+
+            // Show the "Order" button with the calculated price
+            const orderButton = document.getElementById('order_button');
+            orderButton.textContent = `Order €${price.toFixed(2)}`;
+            orderButton.style.display = 'block';
+        }
+
+        function calculateSmallPiecesPrice() {
+        const smallLength = parseInt(document.getElementById('small_length').value);
+        const smallWidth = parseInt(document.getElementById('small_width').value);
+        const smallHeight = parseInt(document.getElementById('small_height').value);
+        const totalSmallPieces = smallLength + smallWidth + smallHeight;
+
+        let pricePerUnit = 0;
+
+        if (totalSmallPieces <= 80) {
+            pricePerUnit = 0.5;
+        } else if (totalSmallPieces <= 100) {
+            pricePerUnit = 0.6;
+        } else if (totalSmallPieces <= 120) {
+            pricePerUnit = 0.8;
+        } else if (totalSmallPieces <= 140) {
+            pricePerUnit = 1;
+        } else if (totalSmallPieces <= 160) {
+            pricePerUnit = 1.2;
+        } else if (totalSmallPieces <= 180) {
+            pricePerUnit = 1.4;
+        } else if (totalSmallPieces <= 200) {
+            pricePerUnit = 1.6;
+        } else if (totalSmallPieces <= 220) {
+            pricePerUnit = 1.8;
+        } else if (totalSmallPieces <= 240) {
+            pricePerUnit = 2;
+        } else if (totalSmallPieces <= 260) {
+            pricePerUnit = 2.2;
+        } else if (totalSmallPieces <= 280) {
+            pricePerUnit = 2.4;
+        } else if (totalSmallPieces <= 300) {
+            pricePerUnit = 2.6;
+        } else if (totalSmallPieces <= 320) {
+            pricePerUnit = 2.8;
+        } else if (totalSmallPieces <= 340) {
+            pricePerUnit = 3;
+        } else if (totalSmallPieces <= 360) {
+            pricePerUnit = 3.2;
+        } else if (totalSmallPieces <= 380) {
+            pricePerUnit = 3.4;
+        } else if (totalSmallPieces <= 400) {
+            pricePerUnit = 3.6;
+        } else if (totalSmallPieces <= 420) {
+            pricePerUnit = 3.8;
+        } else if (totalSmallPieces <= 440) {
+            pricePerUnit = 4;
+        } else if (totalSmallPieces <= 460) {
+            pricePerUnit = 4.2;
+        } else if (totalSmallPieces <= 480) {
+            pricePerUnit = 4.4;
+        } else if (totalSmallPieces <= 500) {
+            pricePerUnit = 4.6;
+        } else if (totalSmallPieces <= 520) {
+            pricePerUnit = 4.8;
+        } else if (totalSmallPieces <= 540) {
+            pricePerUnit = 5;
+        } else if (totalSmallPieces <= 560) {
+            pricePerUnit = 5.2;
+        } else if (totalSmallPieces <= 580) {
+            pricePerUnit = 5.4;
+        } else if (totalSmallPieces <= 600) {
+            pricePerUnit = 5.6;
+        } else if (totalSmallPieces <= 620) {
+            pricePerUnit = 5.8;
+        } else if (totalSmallPieces <= 640) {
+            pricePerUnit = 6;
+        } else if (totalSmallPieces <= 660) {
+            pricePerUnit = 6.2;
+        } else if (totalSmallPieces <= 680) {
+            pricePerUnit = 6.4;
+        } else if (totalSmallPieces <= 690) {
+            pricePerUnit = 6.6;
+        } else {
+            pricePerUnit = 6; // If totalSmallPieces exceeds 690, use the maximum price of 6 EUR
+        }
+
+        const quantity = 1; // For simplicity, assuming the user wants to print one unit.
+        const totalCost = pricePerUnit * quantity;
+
+        const smallResult = document.getElementById('small_result');
+        smallResult.innerHTML = `Price per piece: €${totalCost.toFixed(2)}`;
+
+        // Update the value of the hidden input field with the calculated price
+        const orderPriceInput = document.getElementById('order_price');
+        orderPriceInput.value = totalCost.toFixed(2);
+
+        // Show the "Order" button with the calculated price
+        const orderButton = document.getElementById('order_button');
+        orderButton.textContent = `Order €${totalCost.toFixed(2)}`;
+        orderButton.style.display = 'block';
+    }
+
+		function setMaxValues() {
+				// Set the maximum allowed values for the single structure option
+				const singleLengthInput = document.getElementById('length');
+				const singleWidthInput = document.getElementById('width');
+				const singleHeightInput = document.getElementById('height');
+
+				singleLengthInput.setAttribute('max', '220');
+				singleWidthInput.setAttribute('max', '220');
+				singleHeightInput.setAttribute('max', '250');
+
+				// Set the maximum allowed values for the small pieces option
+				const smallLengthInput = document.getElementById('small_length');
+				const smallWidthInput = document.getElementById('small_width');
+				const smallHeightInput = document.getElementById('small_height');
+
+				smallLengthInput.setAttribute('max', '100');
+				smallWidthInput.setAttribute('max', '100');
+				smallHeightInput.setAttribute('max', '100');
+			}
+			
+        function checkMaxValues() {
+			const lengthInput = document.getElementById('length');
+			const widthInput = document.getElementById('width');
+			const heightInput = document.getElementById('height');
+
+			if (parseInt(lengthInput.value) > 220) {
+				lengthInput.value = 220;
+			}
+
+			if (parseInt(widthInput.value) > 220) {
+				widthInput.value = 220;
+			}
+
+			if (parseInt(heightInput.value) > 250) {
+				heightInput.value = 250;
+			}
+		}
+
+		function checkSmallMaxValues() {
+			const smallLengthInput = document.getElementById('small_length');
+			const smallWidthInput = document.getElementById('small_width');
+			const smallHeightInput = document.getElementById('small_height');
+
+			if (parseInt(smallLengthInput.value) > 100) {
+				smallLengthInput.value = 100;
+			}
+
+			if (parseInt(smallWidthInput.value) > 100) {
+				smallWidthInput.value = 100;
+			}
+
+			if (parseInt(smallHeightInput.value) > 100) {
+				smallHeightInput.value = 100;
+			}
+		}
+
+        // Display file received message after uploading a file
+        const fileUploadForm = document.querySelector('form');
+        fileUploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(fileUploadForm);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    const fileReceivedMessage = document.getElementById('file_received_message');
+                    fileReceivedMessage.style.display = 'block';
+                }
+            }).catch(error => {
+                console.error('Error uploading file:', error);
+            });
+        });
+
+        // Initialize Stripe with your Stripe Publishable Key
+    const stripe = Stripe('pk_live_51Lxm6sEgtx1au46GHhDtjk3JZ04OaA8p7T6xM4lQFLxfbPotRsuT4AhoM4WA0myCsirZeQN32vnUvUSmn1zVyD3m00docojbx7');
+
+    // Create a Stripe Elements instance
+    const elements = stripe.elements();
+
+    // Create a card Element and mount it to the card-element div
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+
+    // Handle form submission
+    const paymentForm = document.getElementById('payment-form');
+    const orderButton = document.getElementById('order_button');
+
+    orderButton.addEventListener('click', handleOrder);
+
+    async function handleOrder(event) {
+        event.preventDefault();
+
+        const formData = new FormData(paymentForm);
+        const price = formData.get('price');
+
+        // Create a payment intent on the server
+        const response = await fetch('/create-payment-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ price })
+        });
+
+        const { clientSecret } = await response.json();
+
+        // Confirm the card payment with the client secret
+        const result = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+                card: cardElement
+            }
+        });
+
+        if (result.error) {
+            // Show error to your customers
+            showError(result.error.message);
+        } else {
+            // The payment was processed successfully
+            showSuccess();
+        }
+    }
+
+    function updateOrderButtonVisibility() {
+        const priceInput = document.getElementById('order_price');
+        const orderButton = document.getElementById('order_button');
+
+        // Get the calculated price
+        const price = parseFloat(priceInput.value);
+
+        // Show the order button if the price is greater than zero
+        if (price > 0) {
+            orderButton.style.display = 'block';
+        } else {
+            orderButton.style.display = 'none';
+        }
+    }
+
+    // Add event listeners to calculate the price and update the order button visibility
+    priceForm.addEventListener('input', () => {
+        calculateSinglePrice();
+        updateOrderButtonVisibility();
+    });
+    smallPiecesPriceForm.addEventListener('input', () => {
+        calculateSmallPiecesPrice();
+        updateOrderButtonVisibility();
+    });
+	// Call setMaxValues() when the page loads to initialize the input limits
+    window.addEventListener('load', setMaxValues);
+    </script>
+
+</body>
+</html>

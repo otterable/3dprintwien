@@ -1,0 +1,79 @@
+/* styles.css */
+body {
+    font-size: 24px;
+    background-color: black;
+    color: white;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.logo {
+    width: 250px;
+    height: 250px;
+    display: block;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+form {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+input[type="file"], input[type="submit"], input[type="button"] {
+    font-size: 24px;
+    padding: 15px;
+}
+
+label {
+    font-size: 24px;
+}
+
+.calculator, .small-pieces-calculator {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.options {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.calculator input[type="number"], .small-pieces-calculator input[type="number"] {
+    font-size: 24px;
+    padding: 10px;
+}
+
+.calculator input[type="button"], .small-pieces-calculator input[type="button"] {
+    font-size: 24px;
+    padding: 15px;
+}
+
+.calculator h2, .small-pieces-calculator h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+/* Center the calculator and small-pieces-calculator divs */
+.calculator, .small-pieces-calculator {
+    width: 80%;
+    margin: 0 auto;
+}
+
+/* Center the checkboxes */
+input[type="checkbox"] {
+    margin-right: 10px;
+    vertical-align: middle;
+    transform: scale(1.5);
+}

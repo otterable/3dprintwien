@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h1>Order Confirmation</h1>
+    <p>Amount: {{ amount }} EUR</p>
+    <div id="card-element">
+        <!-- A Stripe Element will be inserted here. -->
+    </div>
+    <button id="submit">
+        Pay {{ amount }} EUR
+    </button>
+    <div id="card-errors" role="alert"></div>
+
+    <script>
+        var stripe = Stripe('YOUR_STRIPE_PUBLIC_KEY'); // Replace with your Stripe Public Key
+        var elements = stripe.elements();
+        var cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+
+        var form = document.getElementById('payment-form');
+        var cardErrors = document.getElementById('card-errors');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            }).then(function(result) {
+                if (result.error) {
+                    cardErrors.textContent = result.error.message;
+                } else {
+                    // Send the payment method ID to your server to complete the payment
+                    stripeTokenHandler(result.paymentMethod);
+                }
+            });
+        });
+
+        function stripeTokenHandler(paymentMethod) {
+            var form = document.getElementById('payment-form');
+            var hiddenInput = document.createElement('input');
+            hiddenInput.setAttribute('type', 'hidden');
+            hiddenInput.setAttribute('name', 'payment_method_id');
+            hiddenInput.setAttribute('value', paymentMethod.id);
+            form.appendChild(hiddenInput);
+
+            form.submit();
+        }
+    </script>
+</body>
+</html>
